@@ -1912,8 +1912,10 @@ function render(path){
   // the mobile nav is a scroll strip, so the section you are on can sit off-screen
   const onLink=document.querySelector('#nav a.on'), strip=document.getElementById('nav');
   if(onLink&&strip&&strip.scrollWidth>strip.clientWidth+4){
-    const l=onLink.offsetLeft, w=onLink.offsetWidth;
-    strip.scrollTo({left:Math.max(0,l-(strip.clientWidth-w)/2),behavior:'auto'});
+    const want=onLink.offsetLeft+onLink.offsetWidth/2-strip.clientWidth/2;
+    const max=strip.scrollWidth-strip.clientWidth;
+    strip.scrollTo({left:Math.min(max,Math.max(0,want)),
+                    behavior:strip.scrollLeft?'smooth':'auto'});
   }
   window.scrollTo(0,0);
   try{ if(location.hash.replace(/^#\/?/,'')!==CURPATH) history.replaceState(null,'','#/'+CURPATH); }catch(e){}
