@@ -77,16 +77,12 @@ nav.top{position:sticky;top:0;z-index:30;background:var(--ground);border-bottom:
 .navbtn{display:none;width:36px;height:36px;border:1px solid var(--line);border-radius:var(--r);
  background:var(--surface);color:var(--ink2);align-items:center;justify-content:center;cursor:pointer;padding:0;flex:none}
 @media(max-width:719px){
- .navin{gap:10px}
+ .navin{flex-wrap:wrap;gap:8px 10px;padding-bottom:8px}
  .brand{flex:1 1 auto;min-width:0}
- .brand span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
- .navbtn{display:inline-flex;order:3}
- .navlinks{position:absolute;left:0;right:0;top:100%;display:none;flex-direction:column;
-  gap:0;overflow:visible;background:var(--surface);border-bottom:1px solid var(--line);
-  box-shadow:var(--shadow2);padding:6px;z-index:40}
- nav.top.open .navlinks{display:flex}
- .navlinks a{padding:12px 12px;font-size:16px;border-radius:5px}
- .navlinks a.on{background:var(--accent);color:var(--ground)}
+ .navbtn{display:none}
+ .navlinks{order:3;flex:0 0 100%;flex-wrap:wrap;overflow:visible;gap:4px}
+ .navlinks a{padding:7px 10px;font-size:14.5px}
+ nav.top{position:static}
 }
 nav.top{position:sticky}
 .themebtn{flex:none;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);
