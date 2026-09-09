@@ -584,6 +584,8 @@ details[open] summary::after{content:" \2039"}
 .artfoot a{color:var(--accent);font-weight:600;text-decoration:none}
 @media(max-width:560px){.gwnav{grid-template-columns:1fr;justify-items:stretch;text-align:center}
  .gwnav-l,.gwnav-c,.gwnav-r{justify-self:stretch}.gwnav .navpill{display:block}}
+/* where you are in the run of articles: a pill, but not a link */
+.navpill-on{background:var(--surface2);color:var(--ink);border-color:var(--accent2);cursor:default}
 </style>
 <nav class="top"><div class="navin">
 <a class="brand" href="#/" aria-label="Football Friends, home">
@@ -1064,28 +1066,64 @@ function artHref(season,a){ return a.gw?('#/live/'+encodeURIComponent(a.gw)):('#
 // gameweek page, which is where it belonged all along.
 function columnBlock(season){
   const list=artList(season); if(!list.length) return '';
-  const top=list[0], rest=list.slice(1);
+  const top=list[0];
   return `<h2>The column</h2>
    <p class="note" style="margin-bottom:10px">Written after every gameweek, and after anything else worth writing about. Funny first, accurate second, and it counts for nothing at all.</p>
+   ${colStrip(season,top.gw?('gw'+top.gw):top.slug)}
    <div class="card artcard">
     <h3 class="arth">${E(top.title)}</h3>
     <div class="artbody">${top.html}</div>
-    ${top.gw?`<p class="artfoot"><a href="#/live/${top.gw}">Gameweek ${top.gw} in full &mdash; every result and the four awards &rarr;</a></p>`:''}
-   </div>
-   ${rest.length?`<p class="note" style="margin:16px 0 8px">Earlier in the season</p>
-   <div class="list artlist">${rest.map(a=>`<a class="srow" href="${artHref(season,a)}">
-     <b>${E(a.title)}</b><span class="pill">read</span></a>`).join('')}</div>`:''}`;
+   </div>`;
+}
+// The strip that sits under the heading on every page in the column: previous piece,
+// where you are, next piece. No "season so far" pill - the gameweek you are on IS the
+// breadcrumb, and the strip is how you move between weeks.
+function colStrip(season,here){
+  const list=artList(season); if(!list.length) return '';
+  const asc=list.slice().reverse();
+  const i=asc.findIndex(a=>(a.gw?('gw'+a.gw):a.slug)===here);
+  if(i<0) return '';
+  const back=asc[i-1], fwd=asc[i+1], me=asc[i];
+  // a gameweek is a gameweek; a special is named by the half of its title before the dash
+  const lab=a=>a.gw?('Gameweek '+a.gw):(a.title.split(' - ')[0]||a.kind);
+  return `<div class="gwnav">
+   <span class="gwnav-l">${back?`<a class="navpill" href="${artHref(season,back)}">&larr; ${E(lab(back))}</a>`:''}</span>
+   <span class="gwnav-c"><span class="navpill navpill-on">${E(lab(me))}</span></span>
+   <span class="gwnav-r">${fwd?`<a class="navpill" href="${artHref(season,fwd)}">${E(lab(fwd))} &rarr;</a>`:''}</span>
+  </div>`;
+}
+// The table as it stood after a given gameweek, rather than as it stands now.
+function tableAfter(season,gw){
+  const R=D.curres||{}, acc={};
+  Object.keys(R).map(Number).filter(g=>g<=gw).sort((a,b)=>a-b).forEach(g=>{
+    (R[g]||[]).forEach(m=>{
+      [[m.aid,m.a,m.ap,m.hp,m.div],[m.hid,m.h,m.hp,m.ap,m.div]].forEach(([id,nm,me,op,dv])=>{
+        const t=acc[id]=acc[id]||{id,nm,dv,w:0,d:0,l:0,pf:0};
+        t.pf+=me; if(me>op)t.w++; else if(me===op)t.d++; else t.l++;
+      });});});
+  const byDiv={};
+  Object.values(acc).forEach(t=>{(byDiv[t.dv]=byDiv[t.dv]||[]).push(t);});
+  return Object.keys(byDiv).sort().map(dv=>{
+    const rows=byDiv[dv].sort((a,b)=>(b.w*3+b.d)-(a.w*3+a.d)||b.pf-a.pf);
+    return `<h3>${E(dname(dv))}</h3>
+     <div class="card"><div class="tw"><table><thead><tr><th class="num">#</th><th>Team</th>
+      <th class="num">W</th><th class="num">D</th><th class="num">L</th><th class="num">Pts</th><th class="num">For</th></tr></thead>
+      <tbody>${rows.map((t,i)=>`<tr><td class="num mg">${i+1}</td>
+       <td class="tm">${tlink(season,t.id,t.nm,TIER[t.dv])}</td>
+       <td class="num">${t.w}</td><td class="num">${t.d}</td><td class="num">${t.l}</td>
+       <td class="num"><strong>${t.w*3+t.d}</strong></td><td class="num mg">${f1(t.pf)}</td></tr>`).join('')}</tbody></table></div></div>`;
+  }).join('');
 }
 // ---------- one gameweek ----------
 function viewGw(gwRaw){
   const s=D.cur, gws=gwList(), gw=parseInt(gwRaw,10);
   if(!gws.length||gws.indexOf(gw)<0) return viewNow();
   const games=(D.curres||{})[gw]||[];
-  const i=gws.indexOf(gw), prev=gws[i-1], next=gws[i+1];
   const arts=artList(s), mine=arts.filter(a=>a.gw===gw), after=arts.filter(a=>!a.gw&&a.order===gw*10+5);
   const byDiv={};
   games.forEach(m=>{ (byDiv[m.div]=byDiv[m.div]||[]).push(m); });
   const order=Object.keys(byDiv).sort();
+  const su=(D.summaries[s]||{});
   const res=order.map(dv=>`<h3>${E(dname(dv))}</h3>
     <div class="card"><div class="tw"><table><tbody>${byDiv[dv].slice()
       .sort((a,b)=>Math.max(b.ap,b.hp)-Math.max(a.ap,a.hp))
@@ -1095,38 +1133,28 @@ function viewGw(gwRaw){
          <td class="num mg" style="width:1%">&ndash;</td>
          <td class="num" style="width:1%"><strong class="${!aw2?'pos':''}">${f1(m.hp)}</strong></td>
          <td class="tm">${tlink(s,m.hid,m.h,TIER[m.div])}</td></tr>`;}).join('')}</tbody></table></div></div>`).join('');
-  return `<header class="page"><p class="eyebrow">Season ${E(s)} &middot; the column</p>
-   <h1>Gameweek ${gw}</h1>
-   <p class="lede wide">Everything that happened in the week, and what we made of it.</p></header>
-   <div class="gwnav">
-    <span class="gwnav-l">${prev?`<a class="navpill" href="#/live/${prev}">&larr; Gameweek ${prev}</a>`:''}</span>
-    <span class="gwnav-c"><a class="navpill" href="#/live">Season so far</a></span>
-    <span class="gwnav-r">${next?`<a class="navpill" href="#/live/${next}">Gameweek ${next} &rarr;</a>`:''}</span>
-   </div>
+  const head=mine[0];
+  return `<header class="page"><p class="eyebrow">Season ${E(s)} &middot; gameweek ${gw} of 36</p>
+   <h1>${E(head?head.title:'Gameweek '+gw)}</h1>
+   <p class="lede wide">Every result of the week, the table as it stood when it finished, and what we made of it.</p></header>
+   ${colStrip(s,'gw'+gw)}
    ${lastGw(gw,false)}
-   <h2>Results</h2>
+   ${head?`<div class="card artcard"><div class="artbody">${head.html}</div></div>`:''}
+   ${after.map(a=>`<p class="artfoot" style="border:0;padding:0;margin:14px 0 0"><a href="#/article/${E(s)}/${E(a.slug)}">${E(a.title)} &rarr;</a></p>`).join('')}
+   <h2>The week's results</h2>
    ${res}
-   ${mine.map(a=>`<h2>The column</h2>
-     <div class="card artcard"><h3 class="arth">${E(a.title)}</h3>
-      <div class="artbody">${a.html}</div></div>`).join('')}
-   ${after.length?`<div class="list artlist">${after.map(a=>`<a class="srow" href="#/article/${E(s)}/${E(a.slug)}">
-     <b>${E(a.title)}</b><span class="pill">read</span></a>`).join('')}</div>`:''}
-   <p class="note" style="margin-top:14px">None of this counts towards the records until the season finishes. <a href="#/live">The season so far</a> has the tables.</p>`;
+   <h2>How it stood after gameweek ${gw}</h2>
+   ${tableAfter(s,gw)}
+   <p class="note" style="margin-top:14px">None of this counts towards the records until the season finishes.</p>`;
 }
 function viewArticle(season,slug){
   const list=artList(season), a=list.find(x=>x.slug===slug);
   if(!a) return `<header class="page"><h1>No such article</h1>
    <p class="lede wide">Nothing filed under that name. <a href="#/live">Back to the column.</a></p></header>`;
-  const i=list.indexOf(a), prev=list[i+1], next=list[i-1];
-  return `<header class="page"><p class="eyebrow">${E(season)} &middot; the column</p>
+  return `<header class="page"><p class="eyebrow">${E(season)} &middot; ${E(a.kind.toLowerCase())}</p>
    <h1>${E(a.title)}</h1></header>
-   <div class="card artcard"><div class="artbody">${a.html}</div></div>
-   <div class="gwnav">
-    <span class="gwnav-l">${next?`<a class="navpill" href="${artHref(season,next)}">&larr; ${E(next.title)}</a>`:''}</span>
-    <span class="gwnav-c"><a class="navpill" href="#/live">Season so far</a></span>
-    <span class="gwnav-r">${prev?`<a class="navpill" href="${artHref(season,prev)}">${E(prev.title)} &rarr;</a>`:''}</span>
-   </div>
-   <p class="note" style="margin-top:14px">Every piece is indexed on <a href="#/live">the season page</a>.</p>`;
+   ${colStrip(season,a.slug)}
+   <div class="card artcard"><div class="artbody">${a.html}</div></div>`;
 }
 // ---------- seasons ----------
 function viewSeasons(){
