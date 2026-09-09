@@ -1162,7 +1162,7 @@ function viewSeason(s){
         <span class="num" style="width:auto">${x.days===0?'never':x.days+'d'}</span>
         <span>${D.careers.some(c=>c.name===x.name)?mlink(x.name):E(x.name)}</span>
         <span class="mg" style="margin-left:auto">${x.peak?('vs '+x.peak+'d'):''}</span></div>`).join('')}</div></div></div>`).join('')}</div>`;})()}
-   <p class="note" style="margin-top:14px">Luck is actual points minus expected points, where expected assumes you played every team in your division every week. Positive means the schedule was kind.</p>`;
+   <p class="note" style="margin-top:14px">Luck is actual points minus expected points, where expected assumes you played every team in your division every week. Positive means the schedule was kind. All blends the divisions the same way as the win rate, weighted towards the Premiership, though as with dominance it hardly changes anything &mdash; a fixture list is unfair in every division equally.</p>`;
 }
 // ---------- managers ----------
 
@@ -1703,7 +1703,7 @@ function viewRecords(){
        return swapCard(head,sets);
      })()}</div>
     <div><h3>Best win rate</h3>
-     <p class="note" style="margin-bottom:8px">All is adjusted across divisions &mdash; the three blended, the Premiership carrying most of the weight &mdash; because a win is not worth the same in each. It wants three seasons and at least one of them in the Premiership, since half the weight sits there. Pick a division and the table becomes that division's own record, ranked on its own, with one season enough to qualify. Cup is knockout: ties won out of ties played, minimum six.</p>
+     <p class="note" style="margin-bottom:8px">All is adjusted across divisions &mdash; the three blended, the Premiership carrying most of the weight &mdash; because a win is not worth the same in each. It wants three seasons and at least one of them in the Premiership, since half the weight sits there. Pick a division and the table becomes that division's own record, ranked on its own, with one season enough to qualify. Cup is knockout: ties won out of ties played, minimum three Cup campaigns &mdash; win one tie and lose the next and you are on fifty per cent from a sample of two.</p>
      ${(function(){
        const head='<th>Manager</th><th class="num">Win rate</th><th class="num">Overall</th><th class="num hide-sm">Seasons</th><th class="num">Prem</th><th class="num">Champ</th><th class="num">L1</th>';
        // under Cup those last four columns carry ties won-lost, ties played and titles
@@ -1720,17 +1720,17 @@ function viewRecords(){
          (H.bestWinByTier[k]||[]).map(r=>`<tr><td class="tm">${mlink(r.name)}</td>
           <td class="num"><strong>${(r.tierPct||{})[k]}%</strong></td>${cellsOf(r,k)}</tr>`).join('')]));
        // The Cup is knockout, so a win rate there is ties won out of ties played - a
-       // different competition, not a fourth division. Six ties is the floor, the same
-       // one the Cup page uses.
-       const byName={}; (H.rows||[]).forEach(r=>{byName[r.name]=r;});
-       sets.push(['cup','Cup',(D.cup.records||[]).filter(r=>r.played>=6)
-         .slice().sort((a,b)=>b.winPct-a.winPct).slice(0,12)
-         .map(r=>{const c=byName[r.name]||{};
-           return `<tr><td class="tm">${mlink(r.name)}</td>
+       // different competition, not a fourth division. Win one and lose your next tie
+       // and you are on 50% with two games played, so three Cup campaigns is the floor:
+       // enough of a sample to mean something. Seasons here counts Cup seasons.
+       sets.push(['cup','Cup',(D.cup.records||[]).filter(r=>r.seasons>=3)
+         .slice().sort((a,b)=>b.winPct-a.winPct||b.played-a.played).slice(0,12)
+         .map(r=>`<tr><td class="tm">${mlink(r.name)}</td>
             <td class="num"><strong>${f1(r.winPct)}%</strong></td>
             <td class="num mg">${r.won}&ndash;${r.played-r.won}</td>
-            <td class="num hide-sm">${r.played}</td>
-            <td class="num" colspan="3">${r.titles?`<span class="hyear">${trophy('cup',15)}${r.titles}</span>`:'<span class="mg">&mdash;</span>'}</td></tr>`;}).join('')]);
+            <td class="num hide-sm">${r.seasons}</td>
+            <td class="num" colspan="3" style="text-align:left">${r.played} tie${r.played===1?'':'s'}${
+              r.titles?` &middot; <span class="hyear">${trophy('cup',15)}${r.titles}</span>`:''}</td></tr>`).join('')]);
        return swapCard(head,sets);
      })()}</div>
     <div><h3>Unluckiest careers</h3>
@@ -1738,7 +1738,7 @@ function viewRecords(){
     <div><h3>Luckiest careers</h3>
      ${careerSwap(H.luckiestCareer,'luckiest','Luck / season',(r,k)=>`<span class="pos">${sgn(k?(r.luckTier||{})[k]:r.avgLuckAll)}</span>`)}</div>
     <div><h3>Best scorers relative to the division</h3>
-     <p class="note" style="margin-bottom:8px">Each season's score divided by that division's own average that week, so a League One season is judged against League One.</p>
+     <p class="note" style="margin-bottom:8px">Each season's score divided by that division's own average that week, so a League One season is judged against League One. All blends the three the same way the win rate does &mdash; Premiership half, Championship a third, League One a fifth, scaled by seasons played &mdash; but it barely moves the numbers, because a figure that is already measured against its own division travels between them honestly. That is the point of it.</p>
      ${careerSwap(H.mostDominant,'dominant','&times;avg',(r,k)=>f2(k?(r.domTier||{})[k]:r.avgDomAll)+'&times;')}</div>
     <div><h3>Most wooden spoons</h3>
      <p class="note">A spoon is finishing dead last in your division. Counted equally wherever it happened, like the rest of the career tables, with the split shown so you can see where each one was collected.</p>
