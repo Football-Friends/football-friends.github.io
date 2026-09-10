@@ -609,7 +609,9 @@ a.chip.sp:hover{background:var(--accent-soft)}
 .rest{color:var(--mid);font:600 12px/1 "IBM Plex Mono",ui-monospace,monospace;padding-left:4px}
 
 /* The pager: what comes next, named rather than numbered, at the end of the piece. */
-.pager{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+/* needs room underneath as well as above: it was sitting flush against the card grid
+   that follows it and the two read as one block */
+.pager{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0 26px}
 .pcard{display:block;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
  padding:14px 16px;text-decoration:none;color:var(--ink2)}
 a.pcard:hover{border-color:var(--accent2)}
@@ -1066,10 +1068,10 @@ function viewNow(){
   const HERE=(()=>{const t=artList(s)[0];return t?artHere(t):'';})();
   return `<header class="page"><p class="eyebrow">Season ${E(s)} &middot; after gameweek ${gw} of 36</p>
    <h1>${E(su.title||'This season')}</h1><p class="lede wide">${su.overall||''}</p></header>
+   ${lastGw()}
    ${railRow(s,HERE,'The Post-Mortem')}
    ${columnBlock(s)}
    ${pagerRow(s,HERE)}
-   ${lastGw()}
    ${tb.map(dv=>{
      const t=TIER[dv.division];
      const note=(su.divisions||{})[dname(dv.division)];
@@ -1182,11 +1184,11 @@ function viewGw(gwRaw){
    <h1>${E(su.title||(head?head.title:'Gameweek '+gw))}</h1>
    ${su.overall?`<p class="lede wide">${su.overall}</p>`:
      `<p class="lede wide">Every result of the week, the table as it stood when it finished, and what we made of it.</p>`}</header>
+   ${lastGw(gw,false)}
    ${railRow(s,'gw'+gw,'The Post-Mortem')}
    ${head?`<div class="card artcard"><h3 class="arth">${E(head.title)}</h3>
      <div class="artbody">${head.html}</div></div>`:''}
    ${pagerRow(s,'gw'+gw)}
-   ${lastGw(gw,false)}
    <h2>How it stood after gameweek ${gw}</h2>
    ${tableAfter(s,gw,su.divisions||{})}
    <p class="note" style="margin-top:14px">None of this counts towards the records until the season finishes.</p>`;
