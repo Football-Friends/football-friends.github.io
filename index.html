@@ -1069,7 +1069,7 @@ function viewNow(){
   return `<header class="page"><p class="eyebrow">Season ${E(s)} &middot; after gameweek ${gw} of 36</p>
    <h1>${E(su.title||'This season')}</h1><p class="lede wide">${su.overall||''}</p></header>
    ${lastGw()}
-   ${railRow(s,HERE,'Told You So')}
+   ${railRow(s,HERE,'The Sunday Roast')}
    ${columnBlock(s)}
    ${pagerRow(s,HERE)}
    ${tb.map(dv=>{
@@ -1161,7 +1161,7 @@ function tableAfter(season,gw,blurbs){
   return Object.keys(byDiv).sort().map(dv=>{
     const rows=byDiv[dv].sort((a,b)=>(b.w*3+b.d)-(a.w*3+a.d)||b.pf-a.pf);
     const note=(blurbs||{})[dname(dv)];
-    return `<h3>${E(dname(dv))}</h3>
+    return `<h2>${E(dname(dv))}</h2>
      ${note?`<p class="lede wide" style="margin-bottom:10px">${note}</p>`:''}
      <div class="card"><div class="tw"><table><thead><tr><th class="num">#</th><th>Team</th>
       <th class="num">W</th><th class="num">D</th><th class="num">L</th><th class="num">Pts</th><th class="num">For</th></tr></thead>
@@ -1185,12 +1185,11 @@ function viewGw(gwRaw){
    ${su.overall?`<p class="lede wide">${su.overall}</p>`:
      `<p class="lede wide">Every result of the week, the table as it stood when it finished, and what we made of it.</p>`}</header>
    ${lastGw(gw,false)}
-   ${railRow(s,'gw'+gw,'Told You So')}
+   ${railRow(s,'gw'+gw,'The Sunday Roast')}
    ${head?`<div class="card artcard"><h3 class="arth">${E(head.title)}</h3>
      <div class="artbody">${head.html}</div></div>`:''}
    ${pagerRow(s,'gw'+gw)}
-   <h2>Exhibit A</h2>
-   <p class="note" style="margin-bottom:10px">The table exactly as it stood when gameweek ${gw} finished, not as it stands today.</p>
+   <p class="note" style="margin:26px 0 4px">The table exactly as it stood when gameweek ${gw} finished, not as it stands today.</p>
    ${tableAfter(s,gw,su.divisions||{})}
    <p class="note" style="margin-top:14px">None of this counts towards the records until the season finishes.</p>`;
 }
@@ -1201,7 +1200,7 @@ function viewArticle(season,slug){
   return `<header class="page"><p class="eyebrow">Season ${E(season)} &middot; ${E(a.kind.toLowerCase())}</p>
    <h1>${E(a.title.split(' - ')[0])}</h1>
    <p class="lede wide">${a.standfirst||'Not a gameweek, but too big to leave out of the record.'}</p></header>
-   ${railRow(season,a.slug,'Told You So')}
+   ${railRow(season,a.slug,'The Sunday Roast')}
    <div class="card artcard"><h3 class="arth">${E(a.title)}</h3>
     <div class="artbody">${a.html}</div></div>
    ${pagerRow(season,a.slug)}
@@ -1213,9 +1212,8 @@ function viewArticle(season,slug){
 function specialTables(season,slug){
   const t=((D.specialTables||{})[season]||{})[slug];
   if(!t||!t.length) return '';
-  return `<h2>Exhibit B</h2>
-   <p class="note" style="margin-bottom:10px">Every bid for Bradley Barcola, division by division, against what each side actually had left to offer. Fourteen of the twenty-two bid every dollar they owned; none of the three who won him did.</p>
-   ${t.map(x=>`<h3>${E(x.title)}</h3>
+  return `<p class="note" style="margin:26px 0 4px">Every bid for Bradley Barcola, division by division, against what each side actually had left to offer. Fourteen of the twenty-two bid every dollar they owned; none of the three who won him did.</p>
+   ${t.map(x=>`<h2>${E(x.title)}</h2>
     <div class="card"><div class="tw"><table><thead><tr><th>Team</th><th class="num">Bid</th>
      <th class="num">Had</th><th>Outcome</th></tr></thead><tbody>${x.rows.map(r=>{
       const allin=!r.won&&r.bid>=r.had&&r.bid>0;
