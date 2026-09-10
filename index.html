@@ -1722,7 +1722,7 @@ function viewManager(name){
      if(tw) cards.push(aw(IC.dice,'Players traded',tw.n,'','across every season'));
      return cards.length?'<h2>Cup and the small print</h2><div class="grid g3">'+cards.join('')+'</div>':'';})()}
    <h2>Season by season</h2>
-   <div class="card"><div class="tw"><table><thead><tr><th>Season</th><th>Division</th><th>Team</th>
+   <div class="card" data-full="1"><div class="tw"><table><thead><tr><th>Season</th><th>Division</th><th>Team</th>
     <th class="num">Pos</th><th class="num">W&ndash;L</th><th class="num">Pts</th><th class="num">Best</th>
     <th class="num">Luck</th><th>Form</th></tr></thead><tbody>${rows}</tbody></table></div></div>
    ${playerBlocks(name)}
@@ -2874,15 +2874,20 @@ function enhanceTables(){
           k==='all'?'All':E(DFULL[k])}</button>`).join('');
     card.insertBefore(bar,card.firstChild);
     card.dataset.filter='all';
-    // These tables hold ten or twelve of each division so that picking one leaves a
+    // A leaderboard holds ten or twelve of each division so that picking one leaves a
     // table worth reading. All would then be three times as long as any division view,
     // which looks like a different table rather than the same one unfiltered - so it
     // shows as many rows as the fullest division does.
+    //
+    // A card marked data-full is not a leaderboard, it is a complete list - a career,
+    // season by season - and truncating that hides seasons the manager actually played.
     let cap=0;
-    ['1','2','3'].forEach(k=>{
-      const n=rows.filter(r=>r.querySelector('.dbadge.d'+k)).length;
-      if(n>cap) cap=n;
-    });
+    if(!card.dataset.full){
+      ['1','2','3'].forEach(k=>{
+        const n=rows.filter(r=>r.querySelector('.dbadge.d'+k)).length;
+        if(n>cap) cap=n;
+      });
+    }
     card.dataset.cap=cap||rows.length;
     applyTable(card);
   });
