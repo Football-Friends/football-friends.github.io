@@ -687,6 +687,36 @@ td.rb-chg{background:var(--surface2);font-weight:700}
    straight after the header keeps its usual rhythm rather than doubling up */
 header.page{padding-bottom:18px}
 header.page + h2{margin-top:14px}
+/* phones: nothing smaller than 10px to read, and name links tall enough to tap */
+@media (max-width:560px){
+ .dbadge,.pill,.lbl,.tbar-l{font-size:10.5px}
+ .leg-r{font-size:10px}
+ .leg-o a.ml,.hon-w a.ml,.hon-t a.ml,.hon-y a,.nm a.ml,.aw-w a.ml,.aw-s a.ml{display:inline-block;padding:3px 0}
+}
+@media (max-width:560px){
+ .hcard .lbl{font-size:10.5px}
+ .wc-l{font-size:10px}
+ div.mg > a.ml{display:inline-block;padding:2px 0}
+}
+@media (max-width:560px){
+ .rb-score{table-layout:fixed;width:100%;font-size:12.5px}
+ .rb-score th,.rb-score td{padding:6px 3px}
+ .rb-score th:first-child,.rb-score td:first-child{width:36%;padding-left:8px}
+ .rb-score td.num,.rb-score th.num{text-align:right;padding-right:6px}
+ .rb-score tr.rb-grp td{padding-left:8px}
+}
+.rb-s{display:none}
+@media (max-width:560px){
+ .rb-l{display:none}.rb-s{display:inline}
+ .rb-score{min-width:0!important;font-size:12px}
+ .rb-score th,.rb-score td{padding:6px 2px}
+ .rb-score th:first-child,.rb-score td:first-child{width:38%;padding-left:8px}
+}
+/* the open phone menu is a tidy two-column grid; an odd last item stays half width */
+@media(max-width:719px){
+ nav.top.open .navlinks{display:grid;grid-template-columns:1fr 1fr}
+ nav.top.open .navlinks a{flex:none;text-align:left}
+}
 </style>
 <nav class="top"><div class="navin">
 <a class="brand" href="#/" aria-label="Football Friends, home">
@@ -3164,23 +3194,24 @@ document.addEventListener('input',function(e){
 const RB_POS=[['GK','Goalkeeper'],['DEF','Defender'],['MID','Midfielder'],['FWD','Forward']];
 // plain names for Fantrax's stat labels, grouped the way people think about them
 const RB_GROUPS=[
- ['Goals and assists',[['G','Goal'],['A','Assist'],['A2','Second assist'],['AF','Fantasy assist'],['HT','Hat-trick bonus'],['PKG','Penalty scored (taken off the goal)'],['FKG','Free-kick goal (added to the goal)'],['PKD','Penalty won'],['PKM','Penalty missed']]],
- ['Creating and shooting',[['KP','Key pass'],['BCC','Big chance created'],['BCM','Big chance missed'],['SOT','Shot on target'],['CoS','Successful dribble'],['ACNC','Accurate cross (not corners)'],['CF','Corner won']]],
- ['Defending',[['CS','Clean sheet'],['GAX','Goals conceded'],['TkW','Tackle won'],['TLM','Last-man tackle'],['Int','Interception'],['IntB','Interception in the box'],['BS','Blocked shot'],['BC','Blocked cross'],['CLO','Clearance off the line']]],
- ['Goalkeeping',[['Sv','Save'],['SvIB','Save from inside the box'],['PKS','Penalty save'],['Sv%','Save percentage'],['HCS','High claim'],['Pu','Punch'],['Sm','Smother'],['PKGA','Penalty goal conceded']]],
- ['The small stuff',[['AER','Aerial won'],['BR','Ball recovery'],['CLR','Clearance'],['LBA','Accurate long ball'],['FS','Foul won'],['DIS','Dispossessed'],['Tu','Turnover']]],
+ ['Goals and assists',[['G','Goal'],['A','Assist'],['A2','Second assist'],['AF','Fantasy assist'],['HT','Hat-trick bonus'],['PKG','Penalty scored (taken off the goal)','Penalty scored*'],['FKG','Free-kick goal (added to the goal)','Free-kick bonus'],['PKD','Penalty won'],['PKM','Penalty missed']]],
+ ['Creating and shooting',[['KP','Key pass'],['BCC','Big chance created','Chance created'],['BCM','Big chance missed','Chance missed'],['SOT','Shot on target'],['CoS','Successful dribble','Dribble'],['ACNC','Accurate cross (not corners)','Accurate cross'],['CF','Corner won']]],
+ ['Defending',[['CS','Clean sheet'],['GAX','Goals conceded'],['TkW','Tackle won'],['TLM','Last-man tackle'],['Int','Interception'],['IntB','Interception in the box','Box interception'],['BS','Blocked shot'],['BC','Blocked cross'],['CLO','Clearance off the line','Off-line clearance']]],
+ ['Goalkeeping',[['Sv','Save'],['SvIB','Save from inside the box','Box save'],['PKS','Penalty save'],['Sv%','Save percentage'],['HCS','High claim'],['Pu','Punch'],['Sm','Smother'],['PKGA','Penalty goal conceded','Pen conceded']]],
+ ['The small stuff',[['AER','Aerial won'],['BR','Ball recovery'],['CLR','Clearance'],['LBA','Accurate long ball','Long ball'],['FS','Foul won'],['DIS','Dispossessed'],['Tu','Turnover']]],
  ['Playing',[['GP','Appearance'],['Min','Minutes'],['PC%','Pass accuracy']]],
- ['Cards and calamities',[['YC','Yellow card'],['RC','Red card'],['OG','Own goal'],['ErG','Error leading to a goal'],['ErS','Error leading to a shot'],['Pen','Penalties (Fantrax\'s "Pen")']]]];
+ ['Cards and calamities',[['YC','Yellow card'],['RC','Red card'],['OG','Own goal'],['ErG','Error leading to a goal','Error led to goal'],['ErS','Error leading to a shot','Error led to shot'],['Pen','Penalties (Fantrax\'s "Pen")','Penalties (Pen)']]]];
 function rbNum(n){ const s=(Math.round(n*100)/100).toString(); return n>0?'+'+s:s.replace('-','&minus;'); }
 function rbVal(v){
   if(!v) return '<span class="mg">&ndash;</span>';
   if(v.n!==null&&v.n!==undefined) return v.n===0?'<span class="mg">0</span>':rbNum(v.n);
   const t=(v.tiers||[]);
   if(t.length===1){ const x=t[0];
-    if(x.stat==='Min') return rbNum(x.pts)+' for 60+ mins';
-    if(/%$/.test(x.stat)) return rbNum(x.pts)+' at '+Math.round(parseFloat(x.every)*100)+'%+';
-    return rbNum(x.pts)+' per '+x.every; }
-  if(t.length===2&&t[0].pts===0&&t[0].to==='1') return rbNum(t[1].pts)+' each after the 1st';
+    const two=(l,sh)=>`<span class="rb-l">${l}</span><span class="rb-s">${sh}</span>`;
+    if(x.stat==='Min') return two(rbNum(x.pts)+' for 60+ mins',rbNum(x.pts)+' (60+)');
+    if(/%$/.test(x.stat)) return two(rbNum(x.pts)+' at '+Math.round(parseFloat(x.every)*100)+'%+',rbNum(x.pts)+' ('+Math.round(parseFloat(x.every)*100)+'%)');
+    return two(rbNum(x.pts)+' per '+x.every,rbNum(x.pts)+'/'+x.every); }
+  if(t.length===2&&t[0].pts===0&&t[0].to==='1') return `<span class="rb-l">${rbNum(t[1].pts)} each after the 1st</span><span class="rb-s">${rbNum(t[1].pts)} (2nd+)</span>`;
   return '<span class="mg">'+E(v.text.replace(/Calculate Per (Game|Scoring Period), Cumulative:\s*/,''))+'</span>';
 }
 // one row per stat, one column per position; an outfield default is overridden by a position row
@@ -3198,7 +3229,7 @@ function rbScoring(cur){
   const rows=rbTable(D.rules.seasons[cur].scoring);
   const live=r=>r&&RB_POS.some(([p])=>{const v=r.vals[p];return v&&v.n!==0;});
   return RB_GROUPS.map(([g,list])=>{
-    const tr=list.filter(([k])=>live(rows[k])).map(([k,lab])=>`<tr><td class="tm">${E(lab)}</td>${RB_POS.map(([p])=>`<td class="num">${rbVal(rows[k].vals[p])}</td>`).join('')}</tr>`).join('');
+    const tr=list.filter(([k])=>live(rows[k])).map(([k,lab,sh])=>`<tr><td class="tm">${sh?`<span class="rb-l">${E(lab)}</span><span class="rb-s">${E(sh)}</span>`:E(lab)}</td>${RB_POS.map(([p])=>`<td class="num">${rbVal(rows[k].vals[p])}</td>`).join('')}</tr>`).join('');
     return tr?`<tr class="rb-grp"><td colspan="5">${E(g)}</td></tr>${tr}`:'';}).join('');
 }
 function viewRulebook(sub){
@@ -3259,7 +3290,7 @@ function viewRulebook(sub){
    <p class="note">Nobody needs to learn this: sort Fantrax's player list by FP/G and it's all in there. But here's all of it.</p>
    <div class="card" style="margin-top:10px"><div class="tw"><table class="rb-score"><thead><tr><th></th>${RB_POS.map(([p])=>`<th class="num">${p}</th>`).join('')}</tr></thead>
     <tbody>${rbScoring(cur)}</tbody></table></div></div>
-   <p class="note" style="margin-top:8px">"Per 2" is per two of them in a game. A penalty is scored as a goal minus the deduction, so it's worth 3 to any outfielder. Goals conceded only start costing from the second.</p>
+   <p class="note" style="margin-top:8px"><span class="rb-l">"Per 2" is per two of them in a game. A penalty is scored as a goal minus the deduction, so it's worth 3 to any outfielder. Goals conceded only start costing from the second.</span><span class="rb-s">"/2" is per two in a game; "(2nd+)" is from the second goal conceded. *A penalty is a goal minus this, so it's worth 3 to any outfielder.</span></p>
 
    <h2>${E(T.history)}</h2>
    <div class="card"><div class="tw"><table class="rb-hist"><tbody>${tl}</tbody></table></div></div>
