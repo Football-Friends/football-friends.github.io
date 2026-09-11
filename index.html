@@ -2780,7 +2780,7 @@ function tlink(season,teamId,label,tier,size){
 const howCell=r=>{
   const gw=r.gw?` <span class="mg">GW${r.gw}</span>`:'';
   if(r.bid!=null) return `<span class="mg">auction</span> <strong>$${Math.round(r.bid)}</strong>`;
-  if(r.how==='claim') return `<span class="mg">claim</span>${r.paid==null?'':` <strong>${r.paid>0?'$'+Math.round(r.paid):'free'}</strong>`}${gw}`;
+  if(r.how==='claim') return `<span class="mg">claim</span>${r.paid==null?'':` <strong>$${r.paid>0?Math.round(r.paid):0}</strong>`}${gw}`;
   if(r.how==='trade'||r.how==='loan') return `<span class="mg">${r.how==='loan'?'loan from':'trade'}</span> ${r.frm?E(r.frm):''}${gw}`;
   return `<span class="pill pill-q">pickup</span>${gw}`;};
 
