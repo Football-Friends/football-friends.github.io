@@ -717,6 +717,7 @@ header.page + h2{margin-top:14px}
  nav.top.open .navlinks{display:grid;grid-template-columns:1fr 1fr}
  nav.top.open .navlinks a{flex:none;text-align:left}
 }
+.chip.wide{width:auto;min-width:0;padding:0 9px}
 </style>
 <nav class="top"><div class="navin">
 <a class="brand" href="#/" aria-label="Football Friends, home">
@@ -1254,7 +1255,15 @@ function railRow(season,here,heading){
     });
   });
   for(let g=last+1;g<=Math.min(last+2,GWS_IN_SEASON);g++) chips+=`<span class="chip ghost">${g}</span>`;
-  if(last+2<GWS_IN_SEASON) chips+=`<span class="rest">&hellip; ${GWS_IN_SEASON}</span>`;
+  // the season does not end at 36: play-off week (37) and the season review close it
+  const po=arts.find(a=>a.gw===37), rev=arts.find(a=>a.slug==='season-review');
+  if(last+2<GWS_IN_SEASON) chips+=`<span class="rest">&hellip; ${GWS_IN_SEASON} &middot; PO &middot; Review</span>`;
+  else {
+    chips+=here==='gw37'?`<span class="chip wide now" aria-current="page" title="Play-off week">PO</span>`
+      :po?`<a class="chip wide" href="#/live/37" title="Play-off week">PO</a>`:`<span class="chip wide ghost" title="Play-off week">PO</span>`;
+    chips+=here==='season-review'?`<span class="chip wide now" aria-current="page">Review</span>`
+      :rev?`<a class="chip wide" href="#/article/${E(season)}/season-review">Review</a>`:`<span class="chip wide ghost">Review</span>`;
+  }
   return `<div class="railrow">${heading?`<h2 class="nomargin">${heading}</h2>`:'<span></span>'}
    <nav class="rail" aria-label="Gameweeks">${chips}</nav></div>`;
 }
@@ -1267,7 +1276,9 @@ function pagerRow(season,here){
   const card=(a,dir)=>a?`<a class="pcard${dir==='next'?' next':''}" href="${artHref(season,a)}">
      <span class="plab">${dir==='next'?'Next &rarr;':'&larr; Previous'}</span><b>${E(a.title)}</b></a>`
     :`<div class="pcard next empty"><span class="plab">Next &rarr;</span>
-     <b>Gameweek ${gwList()[gwList().length-1]+1}, once it has been played</b></div>`;
+     <b>${list.some(a=>a.gw===37)?'The season review, once the season is done'
+        :(gwList()[gwList().length-1]>=GWS_IN_SEASON?'Play-off week, once it has been played'
+        :'Gameweek '+(gwList()[gwList().length-1]+1)+', once it has been played')}</b></div>`;
   return `<div class="pager">${card(back,'prev')}${card(fwd,'next')}</div>`;
 }
 // The table as it stood after a given gameweek, rather than as it stands now.
@@ -1295,7 +1306,29 @@ function tableAfter(season,gw,blurbs){
   }).join('');
 }
 // ---------- one gameweek ----------
+function viewPlayoffWeek(s){
+  const arts=artList(s), head=arts.find(a=>a.gw===37);
+  const ties=(D.playoffs||{})[s]||[], fin=((D.cup||{}).ties||[]).find(t=>t.season===s&&t.final);
+  if(!head&&!ties.length&&!fin) return viewNow();
+  const what=t=>t.kind==='up'?(t.a.tier===1?'Third place':'The last promotion place'):(t.a.tier===3?'Seventh place':'The last relegation place');
+  const tie=(lab,A,B)=>{const w=A.pts>=B.pts?A:B, l=w===A?B:A;
+    return `<tr><td class="mg">${lab}</td><td class="tm"><strong>${E(w.team)}</strong></td><td class="num"><strong>${f1(w.pts)}</strong></td>
+     <td class="num mg">${f1(l.pts)}</td><td class="tm mg">${E(l.team)}</td></tr>`;};
+  const rows=ties.slice().sort((x,y)=>x.a.tier-y.a.tier||(x.kind==='up'?-1:1))
+    .map(t=>tie(`${E(DFULL[t.a.tier]||'')} &middot; ${what(t)}`,t.a,t.b)).join('')
+    +(fin?tie('Football Friends Cup &middot; the final',{team:fin.win,pts:fin.winScore},{team:fin.lose,pts:fin.loseScore}):'');
+  return `<header class="page"><p class="eyebrow">Season ${E(s)} &middot; gameweek 37</p>
+   <h1>${E(head?head.title.split(' - ').slice(1).join(' - ')||'Play-off week':'Play-off week')}</h1>
+   <p class="lede wide">One afternoon to settle the last promotion place, the last relegation place, third place in every division and the Cup.</p></header>
+   ${railRow(s,'gw37','The Sunday Roast')}
+   ${head?`<div class="card artcard"><h3 class="arth">${E(head.title)}</h3><div class="artbody">${head.html}</div></div>`:''}
+   ${pagerRow(s,'gw37')}
+   ${rows?`<h2>How it finished</h2><div class="card"><div class="tw"><table><thead><tr><th>For</th><th>Winner</th><th class="num">Score</th><th class="num"></th><th>Beaten</th></tr></thead><tbody>${rows}</tbody></table></div></div>`:''}
+   <p class="note" style="margin:26px 0 4px">The table as it stood after gameweek 36, before the play-offs.</p>
+   ${tableAfter(s,GWS_IN_SEASON,{})}`;
+}
 function viewGw(gwRaw){
+  if(parseInt(gwRaw,10)===37) return viewPlayoffWeek(D.cur);
   const s=D.cur, gws=gwList(), gw=parseInt(gwRaw,10);
   if(!gws.length||gws.indexOf(gw)<0) return viewNow();
   const games=(D.curres||{})[gw]||[];
