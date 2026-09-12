@@ -4079,6 +4079,14 @@ function sbAll(all) {
 function sbWire() {
   const main = document.getElementById('sbMain');
   if (!main) return;
+  // thirty-six chips do not fit any screen, so the rail scrolls and the week you are on is
+  // put in view after every render - the same thing the nav strip does
+  const rail = main.querySelector('.rail'), on = rail && rail.querySelector('.chip.now');
+  if (rail && on && rail.scrollWidth > rail.clientWidth + 4) {
+    const want = on.offsetLeft + on.offsetWidth / 2 - rail.clientWidth / 2;
+    rail.scrollTo({ left: Math.min(rail.scrollWidth - rail.clientWidth, Math.max(0, want)),
+                    behavior: rail.scrollLeft ? 'smooth' : 'auto' });
+  }
   main.querySelectorAll('[data-gw]').forEach(b => b.onclick = () => {
     const n = Number(b.dataset.gw);
     if (n === SB.view) return;
