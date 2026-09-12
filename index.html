@@ -819,6 +819,35 @@ header.page + h2{margin-top:14px}
 .sb-gw:hover{border-color:var(--accent2)}
 .sb-gw.on{background:var(--accent);border-color:var(--accent);color:var(--ground)}
 .sb-gw.on small{color:var(--ground);opacity:.75}
+/* past gameweeks, laid out like the matchup pages */
+.sb-vs{display:grid;gap:10px;align-items:stretch;margin-bottom:6px}
+@media (min-width:760px){.sb-vs{grid-template-columns:1fr auto 1fr;gap:14px}}
+.sb-v{display:none}
+@media (min-width:760px){.sb-v{display:grid;place-items:center;font-family:Chivo,sans-serif;
+ font-weight:900;font-size:13px;color:var(--muted)}}
+.sb-cards{display:grid;gap:10px;grid-template-columns:1fr}
+@media (min-width:760px){.sb-cards{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}}
+.sb-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:11px 13px}
+.sb-card.win{border-color:color-mix(in srgb,var(--pos) 48%,var(--line))}
+.sb-card.lose{border-color:color-mix(in srgb,var(--neg) 38%,var(--line))}
+.sb-cardh{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:7px}
+.sb-cardh b{font-family:Chivo,sans-serif;font-weight:900;font-size:15px;color:var(--ink)}
+.sb-seq2{list-style:none;margin:0;padding:0;counter-reset:sq}
+.sb-seq2 li{counter-increment:sq;display:flex;align-items:center;gap:7px;padding:2.5px 0;font-size:12.5px;color:var(--ink2)}
+.sb-seq2 li::before{content:counter(sq);flex:none;width:15px;height:15px;border-radius:50%;
+ background:var(--sunken);color:var(--muted);font-family:Chivo,sans-serif;font-weight:900;
+ font-size:8.5px;display:grid;place-items:center}
+.sb-seq2 li span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sb-seq2 li i{font-style:normal;font-weight:700;font-size:9.5px;color:var(--muted)}
+.sb-none{margin:0;font-size:12.5px;color:var(--neg)}
+.sb-app{margin-top:8px;padding-top:7px;border-top:1px solid var(--line);font-size:12px;color:var(--ink2)}
+.sb-app span{font-family:Chivo,sans-serif;font-weight:700;font-size:9.5px;text-transform:uppercase;
+ letter-spacing:.09em;color:var(--muted);margin-right:5px}
+.sb-app.sb-app0{color:var(--muted)}
+/* dragging */
+.sb-row[draggable]{cursor:grab}
+.sb-row.dragging{opacity:.4}
+.sb-row.over{box-shadow:inset 0 2px 0 var(--accent)}
 </style>
 <nav class="top"><div class="navin">
 <a class="brand" href="#/" aria-label="Football Friends, home">
@@ -3586,7 +3615,7 @@ render(decodeURI(location.hash).replace(/^#\/?/,''));
 const SB = {
   cfg: null, tok: null, me: null, state: null,
   squad: null, elig: null, names: {}, order: [], dirty: false, tick: null, prev: null,
-  gw: null, showGw: null, view: null,
+  gw: null, showGw: null, view: null, gws: [],
 };
 const SB_POS = ['G', 'D', 'M', 'F'];
 const SB_PRIORITY = ['D', 'M', 'F'];
@@ -3597,12 +3626,39 @@ function sbDefaultPos(elig) {
   for (const p of SB_PRIORITY) if (parts.includes(p)) return p;
   return parts[0] || 'M';
 }
+// Google's ID tokens last an hour. Without this, a manager who opens the page after work,
+// tinkers, and saves near an 11pm lock gets "sign in first" and no way forward. We keep the
+// token until it expires, sign back in silently when it does, and only ever show the button
+// to somebody genuinely signed out.
+const SB_KEY = 'ff-subs-tok';
+function sbSaveTok(t) {
+  SB.tok = t;
+  try {
+    const body = JSON.parse(atob(t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    localStorage.setItem(SB_KEY, JSON.stringify({ t, exp: (body.exp || 0) * 1000 }));
+  } catch (e) {}
+}
+function sbLoadTok() {
+  try {
+    const v = JSON.parse(localStorage.getItem(SB_KEY) || 'null');
+    if (v && v.t && v.exp - 60000 > Date.now()) { SB.tok = v.t; return true; }
+  } catch (e) {}
+  try { localStorage.removeItem(SB_KEY); } catch (e) {}
+  return false;
+}
+function sbForget() { try { localStorage.removeItem(SB_KEY); } catch (e) {} SB.tok = null; }
+
 function sbApi(path, opts) {
   const o = Object.assign({ headers: {} }, opts || {});
   o.headers['content-type'] = 'application/json';
   if (SB.tok) o.headers.authorization = 'Bearer ' + SB.tok;
   return fetch(SB.cfg.api.replace(/\/$/, '') + path, o).then(async r => {
     const j = await r.json().catch(() => ({}));
+    if (r.status === 401 && SB.tok && !o._retry) {          // token aged out mid-session
+      sbForget();
+      const fresh = await sbReauth();
+      if (fresh) return sbApi(path, Object.assign({}, opts, { _retry: 1 }));
+    }
     if (!r.ok) { const e = new Error(j.error || ('HTTP ' + r.status)); e.body = j; throw e; }
     return j;
   });
@@ -3638,7 +3694,8 @@ function sbWho() {
 }
 function sbSignOut() {
   try { google.accounts.id.disableAutoSelect(); } catch (e) {}
-  SB.tok = null; SB.me = null; SB.state = null; SB.prev = null;
+  sbForget();
+  SB.me = null; SB.state = null; SB.prev = null;
   SB.squad = null; SB.order = []; SB.dirty = false;
   clearInterval(SB.tick);
   sbSignedOut();
@@ -3666,7 +3723,7 @@ async function sbBoot() {
   // to change every week. Open is the next lock still ahead; showing is the last one passed.
   try {
     const cur = await sbApi('/current');
-    SB.gw = cur.open; SB.showGw = cur.showing;
+    SB.gw = cur.open; SB.showGw = cur.showing; SB.gws = cur.gws || [];
   } catch (e) {
     return sbSet(`<p class="note">The subs service is not answering: ${E(String(e.message || e))}</p>`);
   }
@@ -3679,14 +3736,30 @@ async function sbBoot() {
 
 // Google Identity Services. The token it hands back is verified on our side before anything
 // is written, so a forged one gets nowhere.
+function sbReauth() {
+  return new Promise(res => {
+    let done = false;
+    try {
+      google.accounts.id.initialize({
+        client_id: SB.cfg.googleClientId,
+        auto_select: true,
+        callback: r => { done = true; sbSaveTok(r.credential); res(true); },
+      });
+      google.accounts.id.prompt(n => { if (!done && n && n.isNotDisplayed && n.isNotDisplayed()) res(false); });
+      setTimeout(() => { if (!done) res(false); }, 6000);
+    } catch (e) { res(false); }
+  });
+}
 function sbGoogle() {
   return new Promise((res, rej) => {
     const go = () => {
       try {
         google.accounts.id.initialize({
           client_id: SB.cfg.googleClientId,
-          callback: r => { SB.tok = r.credential; sbAfterSignIn(); },
+          auto_select: true,                    // a returning manager is signed in silently
+          callback: r => { sbSaveTok(r.credential); sbAfterSignIn(); },
         });
+        if (sbLoadTok()) { sbAfterSignIn(); return res(); }
         sbSignedOut();
         res();
       } catch (e) { rej(e); }
@@ -3803,12 +3876,24 @@ async function sbLoad(view) {
 }
 
 function sbChips() {
-  const list = [];
-  if (SB.showGw) list.push(SB.showGw);
-  if (SB.gw && SB.gw !== SB.showGw) list.push(SB.gw);
+  const list = (SB.gws || []).map(g => g.gw);
   if (list.length < 2) return '';
   return `<div class="sb-gws">${list.map(n => `<button class="sb-gw${n === SB.view ? ' on' : ''}"
     data-gw="${n}">GW${n}<small>${n === SB.gw ? 'set yours' : 'locked'}</small></button>`).join('')}</div>`;
+}
+// team -> division and team -> that gameweek's opponent, both already in the site payload
+function sbDivs() {
+  const out = {};
+  ((D.tables || {})[D.cur] || []).forEach(t => (t.rows || []).forEach(r => { out[r.teamId] = t.division; }));
+  return out;
+}
+function sbFixture(gw, tid) {
+  const res = (D.curres || {})[String(gw)] || [];
+  const f = res.find(m => m.hid === tid || m.aid === tid);
+  if (!f) return null;
+  const home = f.hid === tid;
+  return { me: home ? f.hp : f.ap, them: home ? f.ap : f.hp,
+           theirId: home ? f.aid : f.hid, theirName: home ? f.a : f.h, div: f.div };
 }
 function sbRender() {
   const s = SB.state, locked = s.locked;
@@ -3821,7 +3906,7 @@ function sbRender() {
   const warn = (!locked && fresh)
     ? `<div class="sb-bar sb-warn"><span>Heads up</span><b>your bench changed &mdash;
         ${fresh} ${fresh === 1 ? 'player is' : 'players are'} unordered</b></div>` : '';
-  const rows = SB.order.map((p, i) => `<div class="sb-row">
+  const rows = SB.order.map((p, i) => `<div class="sb-row"${locked ? '' : ` draggable="true" data-i="${i}"`}>
       <span class="sb-ord${p.fresh ? ' none' : ''}">${p.fresh ? '&ndash;' : i + 1}</span>
       <span class="sb-nm">${E(p.nm)}</span>
       <span class="sb-pick">${SB_POS.filter(x => String(p.elig).split(',').map(t => t.trim()).includes(x))
@@ -3862,21 +3947,43 @@ function sbRender() {
 
 // Only the next gameweek can be set. The one being played is there to look at - who has what
 // coming on is half the fun of a Saturday.
+function sbCard(t, extra) {
+  const ord = t.order || [];
+  const app = t.applied || [];
+  return `<div class="sb-card${extra ? ' ' + extra : ''}">
+    <div class="sb-cardh"><span class="sb-tm">${E(t.teamName || t.teamId)}</span>
+      ${t.score != null ? `<b>${t.score}</b>` : ''}</div>
+    ${ord.length
+      ? `<ol class="sb-seq2">${ord.map(o => `<li><span>${E(SB.names[o.id] || o.id)}</span><i>${o.pos}</i></li>`).join('')}</ol>`
+      : `<p class="sb-none">Nothing set &mdash; lowest scorer first</p>`}
+    ${app.length ? `<div class="sb-app"><span>Came on</span> ${app.map(n => E(n)).join(', ')}</div>`
+                 : `<div class="sb-app sb-app0"><span>Came on</span> nobody</div>`}
+  </div>`;
+}
 function sbPast() {
   const s = SB.state, all = s.all || [];
-  const mine = all.find(t => SB.me.team && t.teamId === SB.me.team.teamId);
+  const myId = SB.me.team && SB.me.team.teamId;
+  const divs = sbDivs();
+  const byId = {}; all.forEach(t => { byId[t.teamId] = t; });
+  const fx = myId ? sbFixture(s.gw, myId) : null;
+  if (fx) { if (byId[myId]) byId[myId].score = fx.me; if (byId[fx.theirId]) byId[fx.theirId].score = fx.them; }
+  const mine = byId[myId];
+  const seen = new Set([myId, fx && fx.theirId].filter(Boolean));
+  const myDiv = divs[myId];
+  const group = d => all.filter(t => divs[t.teamId] === d && !seen.has(t.teamId))
+                       .sort((a, b) => (a.teamName || '').localeCompare(b.teamName || ''));
+  const others = [...new Set(Object.values(divs))].filter(d => d !== myDiv);
   sbSet(`${sbChips()}
-    <div class="sb-bar sb-shut"><span>Gameweek ${s.gw}</span><b>locked</b></div>
-    <h2>What you went in with</h2>
-    ${mine && (mine.order || []).length
-      ? `<div class="sb-list">${mine.order.map((o, i) => `<div class="sb-row">
-          <span class="sb-ord">${i + 1}</span><span class="sb-nm">${E(SB.names[o.id] || o.id)}</span>
-          <span class="sb-pick"><b class="on">${o.pos}</b></span></div>`).join('')}</div>`
-      : `<p class="note">You set nothing for gameweek ${s.gw}, so the rules picked for you &mdash;
-         lowest scorer on the bench first.</p>`}
-    <h2>Everyone else</h2>
-    <p class="note">Locked, so it is all public now. Have a good look at what everyone else is
-    relying on.</p>${sbAll(all.filter(t => !SB.me.team || t.teamId !== SB.me.team.teamId))}`);
+    <div class="sb-bar sb-shut"><span>Gameweek ${s.gw}</span><b>locked &mdash; everyone's is public</b></div>
+    ${mine && fx ? `<h2>You and ${E(fx.theirName)}</h2>
+      <div class="sb-vs">${sbCard(mine, fx.me > fx.them ? 'win' : fx.me < fx.them ? 'lose' : '')}
+        <span class="sb-v">v</span>
+        ${byId[fx.theirId] ? sbCard(byId[fx.theirId], fx.them > fx.me ? 'win' : fx.them < fx.me ? 'lose' : '') : '<div class="sb-card"><p class="sb-none">Nothing recorded</p></div>'}</div>`
+      : mine ? `<h2>Yours</h2><div class="sb-cards">${sbCard(mine)}</div>` : ''}
+    ${myDiv ? `<h2>${E(myDiv.replace(/^\d+\.\s*/, ''))}</h2>
+      <div class="sb-cards">${group(myDiv).map(t => sbCard(t)).join('')}</div>` : ''}
+    ${others.map(d => `<h2>${E(d.replace(/^\d+\.\s*/, ''))}</h2>
+      <div class="sb-cards">${group(d).map(t => sbCard(t)).join('')}</div>`).join('')}`);
   sbWire();
 }
 function sbPrevBlock() {
@@ -3904,6 +4011,26 @@ function sbWire() {
     const n = Number(b.dataset.gw);
     if (n === SB.view) return;
     sbLoad(n).catch(e => sbSet(`<p class="note">${E(String(e.message || e))}</p>`));
+  });
+  // drag to reorder, with the arrows kept for phones and keyboards
+  let from = null;
+  main.querySelectorAll('.sb-row[draggable]').forEach(row => {
+    row.ondragstart = e => { from = Number(row.dataset.i); row.classList.add('dragging');
+      try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(from)); } catch (x) {} };
+    row.ondragend = () => { row.classList.remove('dragging');
+      main.querySelectorAll('.sb-row').forEach(r => r.classList.remove('over')); };
+    row.ondragover = e => { e.preventDefault();
+      if (from !== null && Number(row.dataset.i) !== from) row.classList.add('over'); };
+    row.ondragleave = () => row.classList.remove('over');
+    row.ondrop = e => {
+      e.preventDefault();
+      const to = Number(row.dataset.i);
+      if (from === null || to === from) return;
+      const [moved] = SB.order.splice(from, 1);
+      SB.order.splice(to, 0, moved);
+      SB.order.forEach(o => { delete o.fresh; });
+      SB.dirty = true; from = null; sbRender();
+    };
   });
   main.querySelectorAll('[data-up],[data-dn]').forEach(b => b.onclick = () => {
     const i = Number(b.dataset.up !== undefined ? b.dataset.up : b.dataset.dn);
