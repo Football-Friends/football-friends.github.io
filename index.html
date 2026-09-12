@@ -744,8 +744,10 @@ header.page + h2{margin-top:14px}
  border-color:color-mix(in srgb,var(--neg) 34%,transparent)}
 .sb-bar.sb-warn b{color:var(--neg);font-family:inherit;font-weight:700;font-size:13px;text-align:right}
 
-.sb-p{font-family:Chivo,sans-serif;font-weight:700;font-size:11px;width:19px;height:19px;
- border-radius:50%;display:grid;place-items:center;color:#fff;font-style:normal;line-height:1}
+/* One shape for a position everywhere it appears. The eleven wore circles and the bench
+   picker beside it wore rounded squares, which read as two different things. */
+.sb-p{font-family:Chivo,sans-serif;font-weight:700;font-size:11px;width:20px;height:20px;
+ border-radius:4px;display:grid;place-items:center;color:#fff;font-style:normal;line-height:1}
 .sb-g{background:#8B6410} .sb-d{background:#2C6BC4}
 .sb-m{background:#1F7A52} .sb-f{background:#B5501E}
 .sb-list{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--surface)}
@@ -897,7 +899,7 @@ header.page + h2{margin-top:14px}
 .sb-seq2 li.came{background:color-mix(in srgb,var(--pos) 10%,transparent);
  box-shadow:inset 3px 0 0 var(--pos);border-radius:3px;padding-left:5px;margin-left:-5px}
 .sb-sn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sb-seq2 li i.sb-p{width:19px;height:19px;font-size:11px;flex:none}
+.sb-seq2 li i.sb-p{width:20px;height:20px;font-size:11px;flex:none;border-radius:4px}
 .sb-camein{font-style:normal;font-size:10.5px;font-weight:700;color:var(--pos);flex:none;
  text-transform:uppercase;letter-spacing:.05em}
 .sb-bar.sb-ongoing b{color:var(--gold)}
@@ -4228,7 +4230,11 @@ function sbLastRead() {
 }
 
 function sbChips() {
-  const list = (SB.gws || []).map(g => g.gw);
+  // Deadlines are posted two gameweeks ahead so the room rolls forward by itself the moment
+  // one locks - but a gameweek with a deadline is not a gameweek you may look at yet. Never
+  // show past the one that is open: the next one to set, and every one already locked.
+  const open = SB.gw || SB.showGw || 0;
+  const list = (SB.gws || []).map(g => g.gw).filter(n => n <= open);
   if (list.length < 2) return '';
   return `<div class="railrow"><div class="rail">${list.map(n => `<button
     class="chip${n === SB.view ? ' now' : ''}${n === SB.gw ? ' live' : ''}" data-gw="${n}"
