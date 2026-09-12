@@ -4605,10 +4605,10 @@ function youClipboard(y, compact) {
         <div class="yu-bar"><i style="width:${101 - pct}%"></i></div>
       </div>
     </div>
-    ${wc ? `<p class="yu-call"><span class="yu-lab">Your worst call so far</span>
-      <b>Gameweek ${wc.gw}.</b> You started ${E(wc.off.nm)}, who scored
-      <b class="${wc.off.pts < 0 ? 'yu-neg' : ''}">${f2(wc.off.pts)}</b>, and left ${E(wc.on.nm)}
-      on the bench on <b class="yu-pos">${f2(wc.on.pts)}</b>. A swing of ${f2(wc.gap)}.</p>` : ''}
+    ${wc ? `<p class="yu-call"><span class="yu-lab">Your widest gap so far</span>
+      <b>Gameweek ${wc.gw}.</b> ${E(wc.off.nm)} played and scored
+      <b class="${wc.off.pts < 0 ? 'yu-neg' : ''}">${f2(wc.off.pts)}</b> while ${E(wc.on.nm)}
+      sat unused on <b class="yu-pos">${f2(wc.on.pts)}</b> &mdash; ${f2(wc.gap)} between them.</p>` : ''}
     ${compact ? '' : youGotAway(y)}
   </div>`;
 }
@@ -4679,7 +4679,8 @@ function youInArticle() {
   const body = document.querySelector('.artbody');
   if (!body || body.dataset.you) return;
   body.dataset.you = '1';
-  const nm = m.teamName || '';
+  const row = myRow();
+  const nm = (row && row.name) || m.teamName || '';   // the current name, not the one cached
   if (!nm) return;
   const re = new RegExp('(' + nm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'g');
   let hits = 0;
