@@ -4646,8 +4646,10 @@ function youNudge() {
 function youNext(y) {
   if (!y.next && !(y.cup || []).length) return '';
   const bits = [];
+  const showing = (window.__YOU_SUBS || {}).showing || 0;
+  const live = n => n <= showing ? 'being played' : 'league';
   if (y.next) bits.push(`<a class="yu-opp" href="${h2hHref(y.next.oppId)}">
-      <span class="yu-lab">Gameweek ${y.next.gw} &middot; league</span>
+      <span class="yu-lab">Gameweek ${y.next.gw} &middot; ${live(y.next.gw)}</span>
       <b>${E(y.next.oppName)}</b>${h2hLine(y.next.oppId)}</a>`);
   (y.cup || []).forEach(c => bits.push(c.bye
     ? `<div class="yu-opp cup"><span class="yu-lab">Gameweek ${c.gw} &middot; Cup ${E(c.round)}</span>
@@ -5009,10 +5011,18 @@ async function youSubsState() {
     const mineSet = st.mine || null;
     const fresh = mineSet && st.benchSize
       ? Math.max(0, st.benchSize - (mineSet.order || []).length) : 0;
-    window.__YOU_SUBS = { open: true, gw: cur.open, deadline: st.deadline, set: !!mineSet,
-      fresh, first: (mineSet && mineSet.firstName) || '' };
+    window.__YOU_SUBS = { open: true, gw: cur.open, showing: cur.showing || 0,
+      deadline: st.deadline, set: !!mineSet, fresh,
+      first: (mineSet && mineSet.firstName) || '' };
+    // redraw the whole block rather than just bolting the banner on: the answer also decides
+    // whether this week's fixture is called "league" or "being played"
     const host = document.querySelector('.yu');
-    if (host && !host.querySelector('.yu-alert')) host.insertAdjacentHTML('afterbegin', youNudge());
+    if (host) {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = youBlock();
+      const fresh2 = tmp.querySelector('.yu');
+      if (fresh2) host.innerHTML = fresh2.innerHTML;
+    }
   } catch (e) { /* the room being down is not the home page's problem */ }
 }
 
