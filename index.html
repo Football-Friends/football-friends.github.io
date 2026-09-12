@@ -781,6 +781,13 @@ header.page + h2{margin-top:14px}
 }
 .sb-btn.sb-link{display:inline-block;width:auto;text-decoration:none;margin:12px 0 4px}
 .sb-btn.sb-link:hover{background:var(--accent2)}
+.sb-who{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+ border:1px solid var(--line);border-radius:var(--r);background:var(--surface);
+ padding:7px 12px;margin:0 0 14px;font-size:13px;color:var(--ink2)}
+.sb-who strong{color:var(--ink)}
+.sb-out{background:none;border:1px solid var(--line);border-radius:var(--r);color:var(--muted);
+ font:inherit;font-size:12px;padding:4px 10px;cursor:pointer}
+.sb-out:hover{border-color:var(--accent2);color:var(--accent)}
 </style>
 <nav class="top"><div class="navin">
 <a class="brand" href="#/" aria-label="Football Friends, home">
@@ -3576,9 +3583,27 @@ function viewSubs() {
     <div id="sbMain"><p class="note">Loading&hellip;</p></div>`;
 }
 
-function sbSet(html) {
+// Signed in as the wrong Google account is an easy mistake to make on a shared laptop, and
+// without a way out the page is a dead end. This sits above everything once you are in.
+function sbWho() {
+  if (!SB.me || !SB.me.signedIn) return '';
+  const t = SB.me.team;
+  return `<div class="sb-who"><span>${t ? `<strong>${E(t.teamName)}</strong> &middot; ` : ''}${E(SB.me.email || '')}</span>
+    <button id="sbOut" class="sb-out">Not you? Sign out</button></div>`;
+}
+function sbSignOut() {
+  try { google.accounts.id.disableAutoSelect(); } catch (e) {}
+  SB.tok = null; SB.me = null; SB.state = null; SB.prev = null;
+  SB.squad = null; SB.order = []; SB.dirty = false;
+  clearInterval(SB.tick);
+  sbSignedOut();
+}
+function sbSet(html, bare) {
   const el = document.getElementById('sbMain');
-  if (el) el.innerHTML = html;
+  if (!el) return;
+  el.innerHTML = (bare ? '' : sbWho()) + html;
+  const out = document.getElementById('sbOut');
+  if (out) out.onclick = sbSignOut;
 }
 
 async function sbBoot() {
@@ -3633,7 +3658,7 @@ function sbSignedOut() {
   sbSet(`<div class="card"><div class="card-b sb-signin">
     <h2 style="margin-top:0">Sign in</h2>
     <p class="note">So we know which team is yours. One tap &mdash; there is no account to make.</p>
-    <div id="sbBtn"></div></div></div>`);
+    <div id="sbBtn"></div></div></div>`, true);
   const el = document.getElementById('sbBtn');
   if (el) google.accounts.id.renderButton(el, { theme: 'filled_black', size: 'large', text: 'continue_with' });
   google.accounts.id.prompt();
