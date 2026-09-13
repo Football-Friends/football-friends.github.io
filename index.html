@@ -4203,7 +4203,15 @@ async function sbAfterSignIn() {
   try {
     SB.me = await sbApi('/me');
     sbSaveSession(SB.me.session);
-    if (!SB.me.team) return sbLink();
+    if (!SB.me.team) {
+      // no team, and the address matched nobody. On the Subs Room a Secret ID is still worth
+      // offering - a current manager lands here - but the room is told it may be a guest.
+      if (SB.after === 'room') {
+        meSave({ guest: true, season: D.cur, email: SB.me.email });
+        SB.after = null; youNav(); return render(CURPATH || 'room');
+      }
+      return sbLink();
+    }
     meSave(SB.me.team);          // so every other page knows whose row to open
     youNav();                    // the nav said "Sign in" until you navigated away
     if (SB.after === 'room') { SB.after = null; return render(CURPATH || 'room'); }
@@ -4690,8 +4698,10 @@ function sbWire() {
 const ME_KEY = 'ff-me';
 function meSave(t) {
   try {
-    localStorage.setItem(ME_KEY, JSON.stringify(t.alumnus
-      ? { alumnus: true, season: t.season, was: t.was }
+    localStorage.setItem(ME_KEY, JSON.stringify(
+      t.guest ? { guest: true, season: t.season, email: t.email || '' }
+      : t.alumnus ? { alumnus: true, season: t.season, was: t.was, manager: t.manager || null,
+                      how: t.how || null }
       : { teamId: t.teamId, teamName: t.teamName, season: t.season || null }));
   } catch (e) {}
 }
@@ -4700,6 +4710,7 @@ function me() {
   try {
     const v = JSON.parse(localStorage.getItem(ME_KEY) || 'null');
     if (!v) return null;
+    if (v.guest) return v.season === D.cur ? v : null;    // signed in, unrecognised
     if (v.alumnus) {
       const ok = v.season === D.cur && v.was && v.was.season && v.was.teamId;
       return ok ? v : null;                               // played before, not this season
@@ -4717,6 +4728,7 @@ function myRow() {                       // my entry in you.json, or nothing
 function myManagers() {
   const m = me(); if (!m) return [];
   // an alumnus is identified by the team he had in the season he last played
+  if (m.guest) return [];
   if (m.alumnus) return (D.mbt || {})[m.was.season + '|' + m.was.teamId] || [];
   return (D.mbt || {})[D.cur + '|' + m.teamId] || [];
 }
@@ -4972,13 +4984,14 @@ function youLuck(y) {
 // where a thing you rarely want belongs.
 function youOut() {
   const m = safe(me, null); if (!m) return '';
-  const who = safe(() => myManagers()[0], '') || m.teamName || (m.was && m.was.teamName) || 'you';
-  return `<p class="note yu-signed">${m.alumnus && !m.verified ? 'Looking at this as'
-    : 'Signed in as'} <b>${E(who)}</b>
-    <button id="youOut" class="sb-out">${m.alumnus && !m.verified ? 'Not you?' : 'Sign out'}</button></p>`;
+  if (m.guest) return `<p class="note yu-signed">Signed in, unrecognised
+    <button id="youOut" class="sb-out">Sign out</button></p>`;
+  const who = safe(() => myManagers()[0], '') || m.manager || m.teamName
+    || (m.was && m.was.teamName) || 'you';
+  return `<p class="note yu-signed">Signed in as <b>${E(who)}</b>
+    <button id="youOut" class="sb-out">Sign out</button></p>`;
 }
 function youWire() {
-  youOldWire();
   const b = document.getElementById('youOut');
   if (!b) return;
   b.onclick = () => {
@@ -4992,36 +5005,33 @@ function youWire() {
   };
 }
 
-// No team this season means nothing to protect: what an old manager gets is a welcome and a
-// link to a record that was already public. The Secret ID exists to stop somebody setting
-// another man's substitutes, and there is nothing here to set - so they can simply say which
-// one they were. No credential they may no longer have, no address they may not have used.
-function youOldDoor() {
-  const list = (D.you || {}).alumni || [];
-  if (!list.length) return '';
-  return `<div class="yu-old">
-    <p class="yu-oldq"><b>Played here, but not this season?</b> There is nothing to sign in to
-    &mdash; your record was never hidden. Say which one you were and this page becomes yours.</p>
-    <div class="yu-oldpick">
-      <select id="youOldSel" aria-label="Which manager were you?">
-        <option value="">Pick your name&hellip;</option>
-        ${list.map((a, i) => `<option value="${i}">${E(a.nm)} &middot; last seen ${E(a.season)}
-          ${a.teamName ? '&middot; ' + E(a.teamName) : ''}</option>`).join('')}
-      </select>
-      <button id="youOldGo" class="sb-btn">That is me</button>
-    </div>
-  </div>`;
-}
-function youOldWire() {
-  const sel = document.getElementById('youOldSel'), go = document.getElementById('youOldGo');
-  if (!sel || !go) return;
-  go.onclick = () => {
-    const a = ((D.you || {}).alumni || [])[Number(sel.value)];
-    if (!a) { sel.focus(); return; }
-    meSave({ alumnus: true, season: D.cur,
-             was: { season: a.season, teamId: a.teamId, teamName: a.teamName } });
-    render(CURPATH);
-  };
+// Signed in, and we have no idea who they are: no team this season, and the address they
+// signed in with is not one we hold. Say so plainly and point them at the one person who can
+// fix it, rather than pretending or guessing.
+function viewGuest(m) {
+  return `<header class="page"><p class="eyebrow">Football Friends</p>
+    <h1>Hello, whoever you are</h1>
+    <p class="lede wide">You are signed in, which is a start. What we cannot work out is who
+    you are: no team in this season's league, and the address you used is not one we have on
+    file for anybody who has ever managed here. So for the moment you are a guest, which in
+    this league means you get all of the reading and none of the blame.</p></header>
+    <section class="yu">
+      <div class="yu-card">
+        <div class="yu-h"><b>If you used to play here</b><span>Thirty-three people have</span></div>
+        <p class="note" style="margin:0">You almost certainly signed in with a different address
+        to the one on your Fantrax account &mdash; which is not a crime, it is just a Tuesday.
+        Send Shiv a message and he can join the two up in about ten seconds, after which this
+        page knows you for good and stops being so formal about it.</p>
+      </div>
+      <div class="yu-card">
+        <div class="yu-h"><b>If you have never played here</b><span>Also welcome</span></div>
+        <p class="note" style="margin:0">Then you have wandered into thirteen seasons of other
+        people's arguments, and you are very welcome to them. Start with
+        <a href="#/live">this week</a>, or go straight to the
+        <a href="#/records">record book</a>, which is where the grudges are kept.</p>
+      </div>
+      ${youOut()}
+    </section>`;
 }
 
 // Somebody who has played here but has no team this season. There is no week to report and
@@ -5171,6 +5181,7 @@ function youInArticle() {
 // link that only exists once you are signed in.
 function viewOffice() {
   const m = me();
+  if (m && m.guest) return viewGuest(m);
   if (m && m.alumnus) return viewAlumnus(m);
   const y = myRow();
   const name = myManagers()[0];
@@ -5184,8 +5195,7 @@ function viewOffice() {
       the only one, which is a mixed blessing: it is your week, your bench, whoever is next,
       and a running account of how much the fixture list has been carrying you. It needs to
       know which team is yours first &mdash; once, and never again.</p></header>
-      <div id="sbMain"><p class="note">Loading the sign-in&hellip;</p></div>
-      ${youOldDoor()}`;
+      <div id="sbMain"><p class="note">Loading the sign-in&hellip;</p></div>`;
   }
   setTimeout(youSubsState, 0);
   const w = y.week;
