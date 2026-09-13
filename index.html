@@ -2603,11 +2603,17 @@ function viewManager(name){
 // ---------- manager records ----------
 function viewMgrRecords(){
   const TR=D.trans, SB=D.statb;
-  const board=(cat,label,note,neg)=>{
+  // The `neg` flag used to paint the figure orange on the four boards that rank a bad
+  // thing - own goals, reds, penalties missed, big chances missed - and nowhere else, which
+  // read as a rule the site does not keep: Most wooden spoons, Worst luck in a season and a
+  // dozen others rank bad things in plain ink two pages away. The rule is now the narrow one
+  // it CAN keep everywhere - orange and green are for signed numbers, where the direction is
+  // the information. A leaderboard's heading already says whether topping it is good.
+  const board=(cat,label,note)=>{
     const r=SB[cat]; if(!r||!r.length) return '';
     return `<div><h3>${E(label)}</h3>${note?`<p class="note" style="margin-bottom:8px">${E(note)}</p>`:''}
-     ${T('<th class="num">'+E({'Own goals':'OGs','Red cards':'Reds','Hat-tricks':'Hats','Clean sheets':'CS'}[label]||label.split(' ')[0])+'</th><th>Manager</th><th>Season</th>',
-      r.map(x=>`<tr><td class="num"><strong class="${neg?'neg':''}">${Number.isInteger(x.v)?x.v:f1(x.v)}</strong></td>
+     ${T('<th class="num">'+E({'Own goals':'OGs','Red cards':'Reds','Hat-tricks':'Hats','Clean sheets':'CS'}[label]||label.split(' ')[0])+'</th><th>Manager</th><th class="when">Season</th>',
+      r.map(x=>`<tr><td class="num"><strong>${Number.isInteger(x.v)?x.v:f1(x.v)}</strong></td>
        <td>${mlinksC(x.managers)}</td><td class="when">${E(x.season)}</td></tr>`).join(''))}</div>`;};
 
   const T=(head,rows)=>`<div class="card"><div class="tw"><table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div></div>`;
@@ -2664,11 +2670,11 @@ function viewMgrRecords(){
     ${board('A','Assists','')}
     ${board('HT','Hat-tricks','')}
     ${board('CS','Clean sheets','')}
-    ${board('OG','Own goals','Not the good kind of leaderboard.',true)}
-    ${board('RC','Red cards','',true)}
-    ${board('PKM','Penalties missed','',true)}
+    ${board('OG','Own goals','Not the good kind of leaderboard.')}
+    ${board('RC','Red cards','')}
+    ${board('PKM','Penalties missed','')}
     ${board('BCC','Big chances created','Somebody did the hard part.')}
-    ${board('BCM','Big chances missed','The agony index.',true)}
+    ${board('BCM','Big chances missed','The agony index.')}
    </div>
    <h2>Wastefulness</h2>
    <div class="grid g2">
@@ -3673,11 +3679,17 @@ function viewPlayers(){
   const T=(head,rows)=>`<div class="card"><div class="tw"><table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div></div>`;
   const simple=(list,label)=>T(`<th class="num">${label}</th><th>Player</th>`,
     list.map(x=>`<tr><td class="num"><strong>${x.n}</strong></td><td class="tm">${plink(x.player)}</td></tr>`).join(''));
-  const board=(cat,label,note,neg)=>{
+  // The `neg` flag used to paint the figure orange on the four boards that rank a bad
+  // thing - own goals, reds, penalties missed, big chances missed - and nowhere else, which
+  // read as a rule the site does not keep: Most wooden spoons, Worst luck in a season and a
+  // dozen others rank bad things in plain ink two pages away. The rule is now the narrow one
+  // it CAN keep everywhere - orange and green are for signed numbers, where the direction is
+  // the information. A leaderboard's heading already says whether topping it is good.
+  const board=(cat,label,note)=>{
     const r=SB[cat]; if(!r||!r.length) return '';
     return `<div><h3>${E(label)}</h3>${note?`<p class="note" style="margin-bottom:8px">${E(note)}</p>`:''}
-     ${T('<th class="num">'+E({'Own goals':'OGs','Red cards':'Reds','Hat-tricks':'Hats','Clean sheets':'CS'}[label]||label.split(' ')[0])+'</th><th>Manager</th><th>Season</th>',
-      r.map(x=>`<tr><td class="num"><strong class="${neg?'neg':''}">${Number.isInteger(x.v)?x.v:f1(x.v)}</strong></td>
+     ${T('<th class="num">'+E({'Own goals':'OGs','Red cards':'Reds','Hat-tricks':'Hats','Clean sheets':'CS'}[label]||label.split(' ')[0])+'</th><th>Manager</th><th class="when">Season</th>',
+      r.map(x=>`<tr><td class="num"><strong>${Number.isInteger(x.v)?x.v:f1(x.v)}</strong></td>
        <td>${mlinksC(x.managers)}</td><td class="when">${E(x.season)}</td></tr>`).join(''))}</div>`;};
   return `<header class="page"><p class="eyebrow">Players &amp; the transfer market</p><h1>Heroes, flops and hot potatoes</h1>
    <p class="lede wide">The footballers themselves: who got bought, who got dropped, who kept getting picked up again by somebody who should have known better, and who produced the biggest single weeks anyone has owned.</p></header>
