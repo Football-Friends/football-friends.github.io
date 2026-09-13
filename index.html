@@ -1192,11 +1192,15 @@ a.navbtn-me span{display:grid;place-items:center;line-height:1}
 .yu-oldpick select:focus{outline:2px solid var(--accent2);outline-offset:1px}
 .yu-oldpick .sb-btn{margin:0;flex:none;width:auto;padding:0 16px;height:38px}
 
-/* contact box */
+/* contact box. Full width of its card, deliberately: a form narrower than the page it sits
+   on reads as an afterthought, and there is no reason here to constrain the measure - the
+   only long text is what the sender types, and they can see all of it. */
 .ctc-l{display:block;font:700 11px/1 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.1em;
  text-transform:uppercase;color:var(--muted);margin:0 0 7px}
 .ctc-l .note{text-transform:none;letter-spacing:0;font-weight:400}
-#ctcF textarea.sinput{font-size:15px;line-height:1.55;resize:vertical;min-height:120px}
+#ctcF{max-width:none}
+#ctcF .sinput{width:100%}
+#ctcF textarea.sinput{font-size:15px;line-height:1.55;resize:vertical;min-height:150px}
 #ctcS:empty{display:none}
 #ctcS{margin-top:11px}
 </style>
@@ -3834,7 +3838,7 @@ function viewContact(){
    <p class="lede wide">A correction, an argument, a rule you think is wrong, or a team name
     you want changed. It reaches Claudinho first and Shiv shortly after, which is the right
     order for most complaints.</p></header>
-   <div class="card" style="max-width:620px"><div class="card-b">
+   <div class="card"><div class="card-b">
     <form id="ctcF" autocomplete="off">
      <label class="ctc-l" for="ctcN">Your name</label>
      <input class="sinput" id="ctcN" maxlength="80" placeholder="So we know who is shouting">
