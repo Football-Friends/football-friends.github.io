@@ -928,7 +928,10 @@ header.page + h2{margin-top:14px}
  letter-spacing:.09em;color:var(--muted)}
 .sb-count{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11px;color:var(--muted)}
 .sb-count.ok{color:var(--pos)}
-.sb-out.sb-link{display:inline-block;text-decoration:none;margin:12px 0 2px;padding:9px 14px}
+.sb-out.sb-link{display:inline-flex;align-items:center;gap:7px;text-decoration:none;
+ margin:12px 0 2px;padding:10px 15px;background:var(--accent-soft);color:var(--accent);
+ border:1px solid var(--accent2);font-weight:700;font-size:13.5px}
+.sb-out.sb-link:hover{background:var(--accent);color:var(--ground);border-color:var(--accent)}
 .sb-found{text-align:center;padding:22px 16px}
 .sb-foundt{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--pos);
  font-family:Chivo,sans-serif;font-weight:700}
@@ -1107,8 +1110,8 @@ a.navbtn-me:hover{color:var(--accent);border-color:var(--accent2)}
    and rings, the Subs pill goes a shade darker. */
 a.navbtn-me.on{background:var(--accent);color:var(--ground);border-color:var(--accent)}
 /* signed out it is an invitation, not an identity: quieter, and it holds a figure not letters */
-a.navbtn-me.is-out{color:var(--muted);border-style:dashed}
-a.navbtn-me.is-out:hover{color:var(--accent);border-color:var(--accent2);border-style:solid}
+a.navbtn-me.is-out{color:var(--ink2)}
+a.navbtn-me.is-out:hover{color:var(--accent);border-color:var(--accent2)}
 a.navbtn-me span{display:grid;place-items:center;line-height:1}
 .sb-tie.sb-cup{--tie:var(--gold)}
 .sb-bye{display:grid;place-items:center;text-align:center;color:var(--muted)}
@@ -4177,14 +4180,16 @@ async function sbAfterSignIn() {
 function sbLink() {
   sbSet(`<div class="card"><div class="card-b">
     <h2 style="margin-top:0">Which team is yours?</h2>
-    <p class="note">Once only. Paste your Fantrax <strong>Secret ID</strong> and we will look it up,
-    then forget it &mdash; we never store it. It is not a password and cannot change anything.</p>
+    <p class="note">Once, ever. Paste your Fantrax <strong>Secret ID</strong>, we look up which
+    side is yours, and then we forget it on the spot &mdash; it is never stored. It is not a
+    password, it cannot spend your money or sell your best player, and anyone who got hold of it
+    could learn only that you are having a difficult season.</p>
     <a class="sb-out sb-link" href="https://www.fantrax.com/user/profile" target="_blank" rel="noopener">
       Open my Fantrax profile &nearr;</a>
     <ol class="sb-steps">
-      <li>That page opens in a new tab &mdash; stay signed in to Fantrax</li>
-      <li>Scroll to the box marked <strong>Secret ID</strong></li>
-      <li>Copy the 16 characters, come back here and paste them below</li>
+      <li>It opens in a new tab &mdash; stay signed in to Fantrax</li>
+      <li>Scroll down to the box marked <strong>Secret ID</strong></li>
+      <li>Copy the 16 characters, come back, paste. That is the whole ordeal</li>
     </ol>
     <div class="sb-field"><span class="sb-lab">Secret ID</span><span class="sb-count" id="sbCount">0 / 16</span></div>
     <input id="sbSecret" class="sb-input" placeholder="paste your Secret ID" autocomplete="off"
@@ -4308,11 +4313,14 @@ function sbAlumnus(rec, seasons) {
   sbSet(`<div class="card"><div class="card-b sb-found">
     <p class="sb-foundt">&check; Welcome back${who ? ', ' + E(who.split(' ')[0]) : ''}</p>
     <p class="sb-foundn">${E(rec.was.teamName || '')} &middot; ${E(rec.was.season)}</p>
-    <p class="note">You have no team this season, so there is no bench to order &mdash; but you
-    are not a stranger here. Your record is still on the site, and so is every week you played.</p>
+    <p class="note">No team this season, so there is mercifully no bench for you to get wrong.
+    You are not a stranger though &mdash; every week you played is still on this site, filed
+    permanently, whether you want it to be or not.</p>
     <p class="note" style="margin-top:8px">Want back in? That is a word with Shiv and a seat at
-    the auction in August. Nothing on this page can do it for you.</p>
-    <a class="sb-btn sb-link" href="#/room">See what you left behind &rarr;</a>
+    the auction in August. This page cannot help you; it can only remind you what happened last
+    time.</p>
+    <a class="sb-btn sb-link" href="#/manager/${encodeURIComponent(who || '')}">Your record
+      &mdash; ${E((who || 'every season').split(' ')[0])}${who ? '&rsquo;s' : ''} seasons here &rarr;</a>
     ${seasons ? `<p class="note" style="margin-top:10px">Fantrax showed us ${seasons}
       Football Friends season${seasons === 1 ? '' : 's'} on your account.</p>` : ''}
   </div></div>`);
@@ -4948,9 +4956,10 @@ function viewAlumnus(m) {
   const last = m.was.season;
   return `<header class="page"><p class="eyebrow">${E(name || 'Football Friends')}</p>
     <h1>Welcome back</h1>
-    <p class="lede wide">You have no team this season &mdash; ${E(m.was.teamName || 'your side')}
-    was ${E(last)}, and the league has turned over since. Everything you did is still here
-    though, and none of it is going anywhere. Have a look round.</p></header>
+    <p class="lede wide">No team this season. ${E(m.was.teamName || 'Your side')} was
+    ${E(last)}, and the league has moved on without you with indecent ease. Everything you did
+    is still here though &mdash; thirteen seasons of this thing have a long memory and no delete
+    button. Have a look round.</p></header>
     <section class="yu">
       ${c ? `<div class="yu-card">
         <div class="yu-h"><b>${E(name)}</b><span>${c.n} season${c.n === 1 ? '' : 's'} &middot;
@@ -4961,7 +4970,7 @@ function viewAlumnus(m) {
           <div><b>${c.W}&ndash;${c.L}</b><span>won &ndash; lost</span></div>
           <div><b>${c.premTop3} of ${c.premSeasons || yrs}</b><span>top-three finishes</span></div>
           <div><b>${E(c.bestTier === 1 ? 'Premiership' : c.bestTier === 2 ? 'Championship' : 'League One')}</b>
-            <span>highest he got</span></div>
+            <span>as high as it got</span></div>
         </div>
         <p class="yu-call"><a href="#/manager/${encodeURIComponent(name)}">Your whole record
           &rarr;</a></p>
@@ -4969,9 +4978,11 @@ function viewAlumnus(m) {
       <div class="yu-card">
         <div class="yu-h"><b>Fancy it again?</b><span>Thirty teams, three divisions</span></div>
         <p class="note" style="margin:0">Nothing on this site can put you back in &mdash; that is
-        a word with Shiv and a seat at the auction in August. Until then the
-        <a href="#/live">league page</a> is the quickest way to see how badly your old rivals are
-        doing, and the <a href="#/records">record book</a> still has your name in it.</p>
+        a word with Shiv and a seat at the auction in August, where you will once again pay too
+        much for a striker who is about to get injured. Until then the
+        <a href="#/live">league page</a> shows how your old rivals are getting on, which is either
+        comforting or infuriating, and the <a href="#/records">record book</a> has your name in it
+        whether you like where it appears or not.</p>
       </div>
       ${youOut()}
     </section>`;
