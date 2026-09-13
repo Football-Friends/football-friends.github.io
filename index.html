@@ -3717,7 +3717,7 @@ function render(path){
   else if(r==='subs') html=viewSubs();
   else html=viewHome();
   app.innerHTML=html+`<div class="foot">Football Friends &middot; 2014-15 to 2026-27.
-   Built by Claude from the league's Fantrax data.</div>`;
+   Built by Claudinho from the league's Fantrax data.</div>`;
   try { youNav(); youWire(); } catch(e){}   // never let the signed-in extras stop a render
   document.querySelectorAll('#nav a, #subsBtn, #meBtn').forEach(a=>{const k=a.dataset.r;
     a.classList.toggle('on',k===r||(k==='live'&&(r==='now'||r==='article'))||(k==='seasons'&&r==='season')||(k==='managers'&&r==='manager')
